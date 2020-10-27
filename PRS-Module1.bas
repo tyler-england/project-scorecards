@@ -1,4 +1,26 @@
 Attribute VB_Name = "Module1"
+Sub test()
+
+For Each ws In ThisWorkbook.Sheets
+    ws.Activate
+    ws.Unprotect
+    Range("F21").HorizontalAlignment = xlCenter
+    Range("F21").WrapText = False
+    ws.Protect
+Next ws
+Exit Sub
+
+Dim rwNames(2) As String, i As Integer
+
+rwNames(0) = "Zero"
+rwNames(1) = "one"
+
+For i = 0 To 1
+    MsgBox rwNames(i)
+Next i
+
+
+End Sub
 Sub AddNewProjects()
 
 Dim wipPath As String, WIP As Workbook, prodLine As String, i As Integer, j As Integer, k As Integer, wB As Workbook
@@ -122,7 +144,7 @@ For i = indexBurt To indexBurt + 2
             'set sN
             If Left(snLong, 1) = "W" Then
             sN = Right(snLong, Len(snLong) - InStr(snLong, "-"))
-            ElseIf Left(snLong, 1) = "C" Then
+            ElseIf Left(snLong, 1) = "C" And Len(snLong) < 10 Then
                 sN = Right(Left(snLong, 5), 4)
             Else
                 sN = snLong
@@ -134,6 +156,10 @@ For i = indexBurt To indexBurt + 2
             
             On Error Resume Next
             orderNum = Cells(j, Application.WorksheetFunction.Match("*ORDER*", Range("11:11"), 0)).Value
+            If orderNum = 431767 Then 'one-off for cotter proj may 2020
+                orderNum = 0
+                sN = Right(snLong, Len(snLong) - 1)
+            End If
             If orderNum = priorCO Then
                 'when order number is a string, the macro fails to read
                 'it and keeps the last value of orderNum
@@ -412,6 +438,18 @@ Dim newSheet As Boolean, i As Integer, prodLine As String, wSheet As Worksheet, 
 Dim indexBurt As Integer, indexCarr As Integer, indexMat As Integer, sheetName As String, dayMsg As Boolean
 Dim curEngDesHrs As Single, curEngTestHrs As Single, remEngDesHrs As Single, remEngTestHrs As Single
 Dim curMfgAssyHrs As Single, curMfgTestHrs As Single, remMfgAssyHrs As Single, remMfgTestHrs As Single
+Dim wSheetNames() As String, x As Integer, wSheetName As Variant, secondMach As Boolean, xMach As Boolean
+Dim invalidChars(6) As String, varVar As Variant
+
+''''''''''''hardcoded'''''''''
+invalidChars(0) = "\"
+invalidChars(1) = "/"
+invalidChars(2) = "*"
+invalidChars(3) = "?"
+invalidChars(4) = ":"
+invalidChars(5) = "["
+invalidChars(6) = "]"
+''''''''''''''''''''''''''''''
 
 On Error GoTo errhandler
 Application.ScreenUpdating = False
@@ -492,9 +530,60 @@ For i = 7 To numCols
         'mateer doesn't use the long S/N
     End If
     
-    sheetName = prodLine & "-" & sN
+    If Trim(UCase(customerName)) <> "STOCK" Then 'machine has been sold
+        sheetName = prodLine & "-" & Left(Replace(customerName, " ", ""), WorksheetFunction.Min(5, Len(Replace(customerName, " ", ""))))
+    Else 'machine hasn't been sold
+        sheetName = prodLine & "-" & sN
+    End If
+    
+    For Each varVar In invalidChars
+        sheetName = Replace(sheetName, varVar, " ")
+    Next
+    
+    x = 0 'create array of sheet names for comparison
+    For Each wSheet In ThisWorkbook.Worksheets
+        ReDim Preserve wSheetNames(x)
+        wSheetNames(x) = wSheet.Name
+        x = x + 1
+    Next
+    
+    secondMach = False 'initial state
+    xMach = False 'initial state
+    For Each wSheetName In wSheetNames
+        If wSheetName = sheetName Then 'already a machine tab with this name (unnumbered)
+            secondMach = True
+        ElseIf wSheetName Like sheetName & "(" & "#" & ")" Then 'already a machine tab with this name (numbered)
+            xMach = True
+        End If
+    Next
+    
+    If secondMach Then 'one machine for this customer already
+        ThisWorkbook.Worksheets(sheetName).Activate
+        If Range("D2").Value <> snLong Then
+            ActiveSheet.Name = sheetName & "(1)"
+            sheetName = sheetName & "(2)"
+        End If
+    ElseIf xMach Then 'some number >1 of machines for this customer already
+        x = 0
+        newSheet = True
+        For Each wSheet In ThisWorkbook.Worksheets
+            If wSheet.Name Like sheetName & "(" & "#" & ")" Then
+                wSheet.Activate
+                If UCase(Range("D2").Value) = UCase(snLong) Then
+                    newSheet = False
+                    sheetName = wSheet.Name
+                    Exit For
+                Else
+                    x = x + 1
+                End If
+            End If
+        Next
+        If newSheet Then
+            sheetName = sheetName & "(" & x + 1 & ")"
+        End If
+    End If
+    
     newSheet = True
-
     For Each wSheet In ThisWorkbook.Worksheets
         If wSheet.Name = sheetName Then
             newSheet = False
@@ -510,7 +599,9 @@ For i = 7 To numCols
 
     'moved up here because we need to know the last
     'date the scorecard was updated
-    If newSheet Then
+    Range("B" & Application.WorksheetFunction.Match("Date", Range("B:B"), 0)).Select
+    Selection.End(xlDown).Select
+    If newSheet Or ActiveCell.Row > 500 Then
         newChartRow = Application.WorksheetFunction.Match("Date", Range("B:B"), 0) + 1
         lastDate = 0
     Else
@@ -564,17 +655,19 @@ For i = 7 To numCols
             End If
         Next j
         
-        Range("B18").Value = Range("B19").Value + Range("B20").Value
-        Range("C18").Value = Range("C19").Value + Range("C20").Value
-        Range("D18").Value = Range("D19").Value + Range("D20").Value
-        Range("E18").Value = Range("E19").Value + Range("E20").Value
-        Range("F18").Value = Range("F19").Value
-        If Range("F18").Value = 0 Then
-            Range("F18").Value = "-"
-        End If
-        Range("G18").Value = Range("G19").Value
-        If Range("G18").Value = 0 Then
-            Range("G18").Value = "-"
+        If Not sameDay Then
+            Range("B18").Value = Range("B19").Value + Range("B20").Value
+            Range("C18").Value = Range("C19").Value + Range("C20").Value
+            Range("D18").Value = Range("D19").Value + Range("D20").Value
+            Range("E18").Value = Range("E19").Value + Range("E20").Value
+            Range("F18").Value = Range("F19").Value
+            If Range("F18").Value = 0 Then
+                Range("F18").Value = "-"
+            End If
+            Range("G18").Value = Range("G19").Value
+            If Range("G18").Value = 0 Then
+                Range("G18").Value = "-"
+            End If
         End If
     End If
 
@@ -762,7 +855,7 @@ indexBurt = Application.WorksheetFunction.Match("Burt", Range("1:1"), 0)
 indexCarr = Application.WorksheetFunction.Match("Carr", Range("1:1"), 0)
 indexMateer = Application.WorksheetFunction.Match("Mateer", Range("1:1"), 0)
 
-'using "sold material" to test whether row is in PM workbook
+'using "sold hrs" to test whether row is in PM/MFG workbook
 For i = 7 To numCols
     
     x = False
