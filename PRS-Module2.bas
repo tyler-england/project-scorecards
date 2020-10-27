@@ -7,9 +7,7 @@ Dim backupPath As String, destPathFull As String, fileName As String, folderName
 
 backupPath = "\\PSACLW02\ProjData\EnglandT\Misc\ProjectScorecards\"
 
-If Right(backupPath, 1) <> "\" Then
-    backupPath = backupPath & "\"
-End If
+If Right(backupPath, 1) <> "\" Then backupPath = backupPath & "\"
 
 fileName = ThisWorkbook.Name
 
