@@ -31,7 +31,7 @@ Function GetFromENG(ByRef sCOs() As String) As Object
     Next
     If wbENG Is Nothing Then Set wbENG = Workbooks.Open(wbDataENG)
     
-    vRng = wbENG.Worksheets(1).Range("A1:BD500")
+    vRng = wbENG.Worksheets(1).Range("A1:BM500")
     If Not bWasOpen Then wbENG.Close savechanges:=False
     
     iRow = 2 'ignore header row
@@ -61,9 +61,13 @@ Function GetFromENG(ByRef sCOs() As String) As Object
             oDictCO.Add "CO", vRng(iRow, 3)
             oDictCO.Add "MO", vRng(iRow, 4)
             oDictCO.Add "SN", vRng(iRow, 5)
+            oDictCO.Add "SoldHrsME", vRng(iRow, 6)
             oDictCO.Add "RemHrsME", vRng(iRow, 9)
+            oDictCO.Add "SoldHrsEE", vRng(iRow, 10)
             oDictCO.Add "RemHrsEE", vRng(iRow, 13)
+            oDictCO.Add "SoldHrsSW", vRng(iRow, 14)
             oDictCO.Add "RemHrsSW", vRng(iRow, 17)
+            oDictCO.Add "SoldHrsET", vRng(iRow, 18)
             oDictCO.Add "RemHrsET", vRng(iRow, 21)
             oDictCO.Add "MatlVar", vRng(iRow, 22)
             oDictCO.Add "%ME", vRng(iRow, 23)
@@ -72,8 +76,11 @@ Function GetFromENG(ByRef sCOs() As String) As Object
             oDictCO.Add "LeadME", vRng(iRow, 26)
             oDictCO.Add "LeadEE", vRng(iRow, 27)
             oDictCO.Add "CmtENG", vRng(iRow, 28)
+            oDictCO.Add "SoldHrsMA", vRng(iRow, 29)
             oDictCO.Add "RemHrsMA", vRng(iRow, 32)
+            oDictCO.Add "SoldHrsEA", vRng(iRow, 33)
             oDictCO.Add "RemHrsEA", vRng(iRow, 36)
+            oDictCO.Add "SoldHrsAT", vRng(iRow, 37)
             oDictCO.Add "RemHrsAT", vRng(iRow, 40)
             oDictCO.Add "%MFG", vRng(iRow, 41)
             oDictCO.Add "%TS", vRng(iRow, 42)
@@ -81,12 +88,14 @@ Function GetFromENG(ByRef sCOs() As String) As Object
             oDictCO.Add "LeadEA", vRng(iRow, 46)
             oDictCO.Add "CmtMFG", vRng(iRow, 47)
             oDictCO.Add "SellPrice", vRng(iRow, 48)
-            oDictCO.Add "DateSell", vRng(iRow, 49)
-            oDictCO.Add "DateShip", vRng(iRow, 50)
-            oDictCO.Add "DateFAT", vRng(iRow, 51)
-            oDictCO.Add "PM", vRng(iRow, 52)
-            oDictCO.Add "SoldMat", vRng(iRow, 53)
-            oDictCO.Add "SoldMar", vRng(iRow, 54)
+            oDictCO.Add "SalesRep", vRng(iRow, 49)
+            oDictCO.Add "DateSell", vRng(iRow, 50)
+            oDictCO.Add "DateShip", vRng(iRow, 51)
+            oDictCO.Add "Destination", vRng(iRow, 52)
+            oDictCO.Add "DateFAT", vRng(iRow, 53)
+            oDictCO.Add "PM", vRng(iRow, 54)
+            oDictCO.Add "SoldMat", vRng(iRow, 55)
+            oDictCO.Add "SoldMar", vRng(iRow, 56)
             
             If sOldCO <> "" Then 'use that so proper scorecard gets updated --> next time the CO will be right
                 oDictOut.Add sOldCO, oDictCO
@@ -121,7 +130,7 @@ Function GetActuals(ByRef sCOs() As String) As Object
     
     Call GlobalVars
     Set oDictOut = CreateObject("Scripting.Dictionary")
-    
+
     If InStr(wbDataCO, "/") > 0 Then
         sWbName = Right(wbDataCO, Len(wbDataCO) - InStrRev(wbDataCO, "/"))
     ElseIf InStr(wbDataCO, "\") > 0 Then
@@ -152,13 +161,14 @@ Function GetActuals(ByRef sCOs() As String) As Object
         Else
             iEmpty = 0
             Set oDictCO = CreateObject("Scripting.Dictionary")
-            oDictCO.Add "Matl", vRng(i, 2)
-            oDictCO.Add "HrsME", vRng(i, 3)
-            oDictCO.Add "HrsEE", vRng(i, 4)
-            oDictCO.Add "HrsSW", vRng(i, 5)
-            oDictCO.Add "HrsMA", vRng(i, 6)
-            oDictCO.Add "HrsEA", vRng(i, 7)
-            oDictCO.Add "HrsTS", vRng(i, 8)
+            oDictCO.Add "Matl", Int(vRng(i, 2))
+            oDictCO.Add "HrsME", Int(vRng(i, 3))
+            oDictCO.Add "HrsEE", Int(vRng(i, 4))
+            oDictCO.Add "HrsSW", Int(vRng(i, 5))
+            oDictCO.Add "HrsET", 0 ' we don't track ENG test hrs yet (??)
+            oDictCO.Add "HrsMA", Int(vRng(i, 6))
+            oDictCO.Add "HrsEA", Int(vRng(i, 7))
+            oDictCO.Add "HrsTS", Int(vRng(i, 8))
             
             vParts = Split(vRng(i, 10), ";;")
             For j = 0 To UBound(vParts) 'get only the latest 20
@@ -212,10 +222,10 @@ Function GetDocs(ByRef sCOs() As String) As Object
     
     vRng = wbDocs.Worksheets(1).Range("C1:CZ100").Value2
     If Not bWasOpen Then wbDocs.Close savechanges:=False
-    
     For i = 0 To UBound(sCOs)
         j = 1
         bCol = False
+        iEmpty = 0
         Do While iEmpty < 3
             If vRng(3, j) = 0 Then
                 iEmpty = iEmpty + 1
@@ -279,61 +289,116 @@ errhandler:
     MsgBox "Docs prob"
 End Function
 
-Function UpdateEngMfgApps() As String()
-'''Returns True if workbook has updated (and there are changes)
-    Dim sOut() As String, oDictProjs As Object
+Function UpdateEngMfgApps(oDictActs As Object) As String()
+'''Returns changed COs if workbook has updated (and there are changes)
     
-    ReDim sOut(0)
-    UpdateEngMfgApps = sOut
+    Dim sOut() As String, sCO As String, sKeys(6) As String
+    Dim wbENG As Workbook, bWasOpen As Boolean
+    Dim i As Integer, j As Integer, x As Integer, iCols(6) As Integer
+    Dim var As Variant
     
-    Set oDictProjs = GetForENG 'get items to put into ENG/ASY wkbk
-    If oDictProjs Is Nothing Then Exit Function
+    On Error GoTo errhandler
     
-    UpdateEngMfgApps = sOut
+    iCols(0) = 9
+    iCols(1) = 13
+    iCols(2) = 17
+    iCols(3) = 21
+    iCols(4) = 32
+    iCols(5) = 36
+    iCols(6) = 40
     
-End Function
-
-Function GetForENG() As Object
-'''Returns dictionary for updating ENG/MFG workbook w/ current project values
-'''Error returns Nothing
-    Dim oDictOut As Object, oDictCO As Object
-    Dim sCO As String
-    Dim i As Integer, j As Integer, iDiff As Integer
-    Dim wSheet As Worksheet
-    Set oDictOut = CreateObject("Scripting.Dictionary")
-    For i = 0 To UBound(sCOs)
-        Set wSheet = Nothing
-        sCO = sCOs(i)
-        If i > 0 Then
-            If sCO = GetCO(ThisWorkbook.Worksheets(i + iDiff)) Then
-                Set wSheet = ThisWorkbook.Worksheets(i = iDiff)
-            End If
+    sKeys(0) = "HrsME"
+    sKeys(1) = "HrsEE"
+    sKeys(2) = "HrsSW"
+    sKeys(3) = "HrsET"
+    sKeys(4) = "HrsMA"
+    sKeys(5) = "HrsEA"
+    sKeys(6) = "HrsTS"
+    
+    If InStr(wbDataENG, "/") > 0 Then
+        sWbName = Right(wbDataENG, Len(wbDataENG) - InStrRev(wbDataENG, "/"))
+    ElseIf InStr(wbDataENG, "\") > 0 Then
+        sWbName = Right(wbDataENG, Len(wbDataENG) - InStrRev(wbDataENG, "\"))
+    End If
+    For Each var In Workbooks
+        If var.Name = sWbName Then
+            Set wbENG = var
+            bWasOpen = True
+            Exit For
         End If
-        If wSheet Is Nothing Then 'i=0 or idiff didn't work
-            For j = 1 To ThisWorkbook.Worksheets.Count
-                If sCOs(i) = GetCO(ThisWorkbook.Worksheets(j)) Then
-                    Set wSheet = ThisWorkbook.Worksheets(j)
-                    iDiff = j - i
-                    Exit For
-                End If
-            Next
-        End If
-        If wSheet Is Nothing Then 'should really never happen
-            MsgBox "Unable to find the scorecard worksheet for " & sCO(i) & ". No cards were updated.", vbExclamation
-            Exit Function
-        End If
-        Set oDictCO = CreateObject("Scripting.Dictionary")
-        With wSheet
-            oDictCO.Add "HrsME", .Range("J5").Value
-            oDictCO.Add "HrsEE", .Range("L5").Value
-            oDictCO.Add "HrsSW", .Range("N5").Value
-            
-        End With
-        oDictOut.Add sCO(i), oDictCO
-        Set oDictCO = Nothing
     Next
-    Set GetForENG = oDictOut
+    If wbENG Is Nothing Then Set wbENG = Workbooks.Open(wbDataENG)
+    
+    i = 4 'first row in ENG wb
+    ReDim sOut(0)
+    With wbENG.Worksheets(1)
+        Do While .Range("C" & i).Value > 0
+            sCO = .Range("C" & i).Value
+            If oDictActs.Exists(sCO) Then
+                For j = 0 To UBound(iCols)
+                    If .Cells(i, j - 1).Value <> oDictActs(sCO).Item(sKeys(j)) Then
+                        .Cells(i, j).Value = .Cells(i, j - 2).Value - oDictActs(sCO).Item(sKeys(j))
+                        .Cells(i, j - 1).Value = oDictActs(sCO).Item(sKeys(j))
+                        ReDim Preserve sOut(x)
+                        sOut(x) = "• " & sCO
+                        x = x + 1
+                    End If
+                Next
+            End If
+            wbENG.Save
+            i = i + 1
+        Loop
+    End With
+    
+    If Not bWasOpen Then wbENG.Close savechanges:=False
+    
+    UpdateEngMfgApps = sOut
     Exit Function
 errhandler:
-    MsgBox "Error in GetForENG function"
+    MsgBox "Error updating ENG/MFG/APPS workbook"
 End Function
+'
+'Function GetForENG() As Object
+''''Returns dictionary for updating ENG/MFG workbook w/ current project values
+''''Error returns Nothing
+'    Dim oDictOut As Object, oDictCO As Object
+'    Dim sCO As String
+'    Dim i As Integer, j As Integer, iDiff As Integer
+'    Dim wSheet As Worksheet
+'    Set oDictOut = CreateObject("Scripting.Dictionary")
+'    For i = 0 To UBound(sCOs)
+'        Set wSheet = Nothing
+'        sCO = sCOs(i)
+'        If i > 0 Then
+'            If sCO = GetCO(ThisWorkbook.Worksheets(i + iDiff)) Then
+'                Set wSheet = ThisWorkbook.Worksheets(i = iDiff)
+'            End If
+'        End If
+'        If wSheet Is Nothing Then 'i=0 or idiff didn't work
+'            For j = 1 To ThisWorkbook.Worksheets.Count
+'                If sCOs(i) = GetCO(ThisWorkbook.Worksheets(j)) Then
+'                    Set wSheet = ThisWorkbook.Worksheets(j)
+'                    iDiff = j - i
+'                    Exit For
+'                End If
+'            Next
+'        End If
+'        If wSheet Is Nothing Then 'should really never happen
+'            MsgBox "Unable to find the scorecard worksheet for " & sCO(i) & ". No cards were updated.", vbExclamation
+'            Exit Function
+'        End If
+'        Set oDictCO = CreateObject("Scripting.Dictionary")
+'        With wSheet
+'            oDictCO.Add "HrsME", .Range("J5").Value
+'            oDictCO.Add "HrsEE", .Range("L5").Value
+'            oDictCO.Add "HrsSW", .Range("N5").Value
+'
+'        End With
+'        oDictOut.Add sCO(i), oDictCO
+'        Set oDictCO = Nothing
+'    Next
+'    Set GetForENG = oDictOut
+'    Exit Function
+'errhandler:
+'    MsgBox "Error in GetForENG function"
+'End Function

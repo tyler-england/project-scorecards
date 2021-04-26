@@ -2,11 +2,16 @@ Attribute VB_Name = "Setup"
 Option Explicit
 Public arrErrorEmails() As String, iNumMsgs As Integer, bNewMsg As Boolean 'for ErrorRep
 Public wbDataCO As String, wbDataENG As String, wbDocTracker As String
+Public sRateCarrENG As Single, sRateCarrASSY As Single, sRateBurtENG As Single, sRateBurtASSY As Single
 
 Function GlobalVars()
     ''''''hardcoded variables''''''''''
-    wbDataCO = "https://bw1-my.sharepoint.com/personal/tyler_england_bwpackagingsystems_com/Documents/Distributed Files/Project Scorecards/CO_Data.xlsm"
-    wbDataENG = "https://bw1-my.sharepoint.com/personal/tyler_england_bwpackagingsystems_com/Documents/Distributed Files/Project Scorecards/ENG-MFG-APP_Data.xlsm"
+    sRateBurtASSY = 91 '$/hr
+    sRateBurtENG = 146.5
+    sRateCarrASSY = 100
+    sRateCarrENG = 140
+    wbDataCO = ThisWorkbook.Path & "/CO_Data.xlsm" '"https://bw1-my.sharepoint.com/personal/tyler_england_bwpackagingsystems_com/Documents/Distributed Files/Project Scorecards/CO_Data.xlsm"
+    wbDataENG = ThisWorkbook.Path & "/ENG-MFG-APP_Data.xlsm" '"https://bw1-my.sharepoint.com/personal/tyler_england_bwpackagingsystems_com/Documents/Distributed Files/Project Scorecards/ENG-MFG-APP_Data.xlsm"
     wbDocTracker = "https://bw1-my.sharepoint.com/personal/tyler_england_bwpackagingsystems_com/Documents/Distributed Files/Doc Tracker.xlsm"
 End Function
 
